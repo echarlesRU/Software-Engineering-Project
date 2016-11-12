@@ -1,4 +1,4 @@
-//package expertWebCrawler;
+package webchase;
 
 import java.io.IOException;
 import java.util.*;
@@ -48,7 +48,7 @@ public class WebPage {
     private void initTags(){
         //p, li, td, th, a, b, pre, h(1..6)
         tagsToScan = new ArrayList(13);
-        
+                
         tagsToScan.add("p");
         tagsToScan.add("li");
         tagsToScan.add("td");
@@ -84,12 +84,12 @@ public class WebPage {
      */
     public void scanPage() throws IOException{
         //For each search term
-        for(String term: this.terms){
+        for(String term: this.emptyIfNull(this.terms)){
             //For each searchable tag
-            for(String tag: this.tagsToScan){
+            for(String tag: this.emptyIfNull(this.tagsToScan)){
                 Elements tags = pageHTML.getElementsByTag(tag);
                 //For each instance of the searchable tag
-                for(Element individualTag: tags){
+                for(Element individualTag: this.emptyIfNull(tags)){
                     String tagText = individualTag.text();
                     if(tagText.toLowerCase().contains(term.toLowerCase())
                             && !this.thisOutput.contains(tagText)){
@@ -98,6 +98,18 @@ public class WebPage {
                 }
             }
         }
+    }
+    
+    /**
+     * Source reference: 
+     *    stackoverflow.com/questions/2250031/null-check-in-an-enhanced-for-loop
+     * Returns an empty Iterable object if param is null, or param if it is not.
+     * @param <T> Type of Iterable object passed
+     * @param iterable Iterable object being passed
+     * @return iterable or an empty Iterable object
+     */
+    private <T>Iterable<T> emptyIfNull(Iterable<T> iterable) {
+        return iterable == null ? Collections.emptyList() : iterable;
     }
     
     /**

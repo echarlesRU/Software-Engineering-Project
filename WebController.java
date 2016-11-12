@@ -1,8 +1,9 @@
-//package expertWebCrawler;
+package webchase;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
+import org.jsoup.helper.*;
 
 /**
  * Takes the user input from the view, processes it, then returns a list of
@@ -15,7 +16,8 @@ public class WebController {
     List<WebPage> scannedPages;   //List of scanned WebPages
     Queue<String> yetToScan;      //Queue of URLs to create as WebPage & scan
     int depth;                    //User inputed depth of search
-
+    final int MIN_URL_LENGTH = 7; //Defines minumum url length as "xyz.abc"
+    
     /**
      * Initialize all fields
      * @param _initialURLs User inputed URLs
@@ -46,6 +48,7 @@ public class WebController {
         
         // Working with single thread first
         for(String url: this.initialURLs){
+System.out.println(url);
             WebPage initWebPage = new WebPage(url, this.terms);
             initWebPage.initURLs();
             initWebPage.scanPage();
@@ -53,26 +56,25 @@ public class WebController {
             // Adds all nested urls into the queue
             this.scannedPages.add(initWebPage);
             for(String nestedURL: initWebPage.getPageURLs()){
-                if(!this.haveScanned(nestedURL))
+                if(this.isValidURL(nestedURL))
                     this.yetToScan.add(nestedURL);
-                //System.out.println(nestedURL);
             }
         }
         // Since the first layer has been scanned
         this.depth = this.depth - 1;
         
         //For demo only
-        //while(this.yetToScan.peek() != null){
-        //    WebPage nextPage = new WebPage(yetToScan.remove(), this.terms);
-        //    nextPage.scanPage();
-        //    this.scannedPages.add(nextPage);
-        //}
+        while(this.yetToScan.peek() != null){
+System.out.println(this.yetToScan.peek());
+            WebPage nextPage = new WebPage(yetToScan.remove(), this.terms);
+            nextPage.scanPage();
+            this.scannedPages.add(nextPage);
+        }
         //End for demo only
         
         /*
         //In progress, do not use
         while(depth > 0){
-            String url = "";
             if(yetToScan.peek() != null){
                 url = yetToScan.remove();
                 
@@ -80,6 +82,23 @@ public class WebController {
             }
         }
         */
+    }
+    
+    /**
+     * Tests if the URL is valid
+     * @param url
+     * @return 
+     */
+    private boolean isValidURL(String url){
+        boolean result = false;
+        
+        if(url != null && url.length() >= this.MIN_URL_LENGTH){
+            if(!this.haveScanned(url)){
+                result = true;
+            }
+        }
+        
+        return result;
     }
     
     /**
@@ -98,6 +117,19 @@ public class WebController {
         
         return result;
     }
+    
+    /**
+     * Source reference: 
+     *    stackoverflow.com/questions/2250031/null-check-in-an-enhanced-for-loop
+     * Returns an empty Iterable object if param is null, or param if it is not.
+     * @param <T> Type of Iterable object passed
+     * @param iterable Iterable object being passed
+     * @return iterable or an empty Iterable object
+     */
+    private <T>Iterable<T> emptyIfNull(Iterable<T> iterable) {
+        return iterable == null ? Collections.emptyList() : iterable;
+    }
+    
     
     /**
      * Gets the scanned WebPage objects
