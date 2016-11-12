@@ -1,8 +1,8 @@
 package webchase;
 
-import java.net.URL;
-import java.util.List;
-import java.util.Queue;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Takes the user input from the view, processes it, then returns a list of
@@ -10,10 +10,10 @@ import java.util.Queue;
  * @author John Filipowicz
  */
 public class WebController {
-    List<URL> initialURLs;        //List of user inputed URLs
+    List<String> initialURLs;     //List of user inputed URLs
     List<String> terms;           //List of user inputed terms
     List<WebPage> scannedPages;   //List of scanned WebPages
-    Queue<URL> yetToScan;         //Queue of URLs to create as WebPage & scan
+    Queue<String> yetToScan;      //Queue of URLs to create as WebPage & scan
     int depth;                    //User inputed depth of search
 
     /**
@@ -22,12 +22,16 @@ public class WebController {
      * @param _terms User inputed search terms
      * @param _depth User inputed search depth
      */
-    WebController(List<URL> _initialURLs, List<String> _terms, int _depth){
+    WebController(List<String> _initialURLs, List<String> _terms, int _depth){
         this.initialURLs = _initialURLs;
         this.terms = _terms;
         this.depth = _depth;
         
-        this.scanPages();
+        this.yetToScan = new LinkedBlockingQueue();
+        this.scannedPages = new ArrayList();
+        try{
+            this.scanPages();
+        } catch(IOException e){}
     }
     
     /**
@@ -35,7 +39,71 @@ public class WebController {
      *     list of scanned WebPages. Each WebPage will contain their discovered
      *     output.
      */
-    private void scanPages(){
-        // To be written
+    private void scanPages() throws IOException{
+        //For to initialize the threads[] and start
+        //For to join and return... themselves?
+        // Blocking queue take for threads
+        
+        // Working with single thread first
+        for(String url: this.initialURLs){
+            WebPage initWebPage = new WebPage(url, this.terms);
+            initWebPage.initURLs();
+            initWebPage.scanPage();
+                
+            // Adds all nested urls into the queue
+            this.scannedPages.add(initWebPage);
+            for(String nestedURL: initWebPage.getPageURLs()){
+                if(!this.haveScanned(nestedURL))
+                    this.yetToScan.add(nestedURL);
+                //System.out.println(nestedURL);
+            }
+        }
+        // Since the first layer has been scanned
+        this.depth = this.depth - 1;
+        
+        //For demo only
+        //while(this.yetToScan.peek() != null){
+        //    WebPage nextPage = new WebPage(yetToScan.remove(), this.terms);
+        //    nextPage.scanPage();
+        //    this.scannedPages.add(nextPage);
+        //}
+        //End for demo only
+        
+        /*
+        //In progress, do not use
+        while(depth > 0){
+            String url = "";
+            if(yetToScan.peek() != null){
+                url = yetToScan.remove();
+                
+                WebPage nextToScan = new WebPage(url, this.terms);
+            }
+        }
+        */
+    }
+    
+    /**
+     * Returns whether a WebPage with the URL has been scanned
+     * @param url URL to check for
+     * @return boolean if it has been scanned
+     */
+    private boolean haveScanned(String url){
+        boolean result = false;
+        
+        for(WebPage scanned: scannedPages){
+            if (scanned.getURL().equalsIgnoreCase(url)){
+                result = true;
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Gets the scanned WebPage objects
+     * @return WebPage List scanned pages
+     */
+    public List<WebPage> getWebPages(){
+        return this.scannedPages;
     }
 }
