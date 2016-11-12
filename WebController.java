@@ -1,3 +1,4 @@
+//package expertWebCrawler;
 package webchase;
 
 import java.io.IOException;
@@ -48,7 +49,7 @@ public class WebController {
         
         // Working with single thread first
         for(String url: this.initialURLs){
-System.out.println(url);
+//System.out.println(url);
             WebPage initWebPage = new WebPage(url, this.terms);
             initWebPage.initURLs();
             initWebPage.scanPage();
@@ -65,7 +66,7 @@ System.out.println(url);
         
         //For demo only
         while(this.yetToScan.peek() != null){
-System.out.println(this.yetToScan.peek());
+//System.out.println(this.yetToScan.peek());
             WebPage nextPage = new WebPage(yetToScan.remove(), this.terms);
             nextPage.scanPage();
             this.scannedPages.add(nextPage);
