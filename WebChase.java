@@ -15,6 +15,7 @@ public class WebChase {
      */
     public static void main(String[] args) {
         Application.launch(PrimaryView.class, args);
+        //TestClass test = new TestClass("http://www.radford.edu/~nokie/classes/320/", "generic package");
     }
     
 }

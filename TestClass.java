@@ -24,7 +24,8 @@ public class TestClass {
 
 //public class URLReader {
     //public static void main(String[] args) throws Exception {
-    public TestClass(String url, List<String> terms){
+    //public TestClass(String url, List<String> terms){
+    public TestClass(String url, String terms){
         
         
         try {
@@ -32,14 +33,15 @@ public class TestClass {
             Cleaner clean = new Cleaner(Whitelist.relaxed());
             Document doc = Jsoup.connect(url).get();
             doc = clean.clean(doc);
-            //Elements anchorTags = doc.getElementsByTag("a");
+            Elements anchorTags = doc.getElementsByTag("a");
             
-            //for (Element link : anchorTags) {
-            //    String linkHref = link.attr("abs:href");
-            //    System.out.println(linkHref);
-            //}
-            System.out.println(doc);
+            for (Element link : anchorTags) {
+                String linkHref = link.attr("abs:href");
+                System.out.println(linkHref);
+            }
+            //System.out.println(doc);
             //System.out.println("\n" + doc.title());
+            
         } catch (IOException ex) {
             Logger.getLogger(TestClass.class.getName()).log(Level.SEVERE, null, ex);
         }
