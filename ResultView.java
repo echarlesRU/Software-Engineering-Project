@@ -1,5 +1,4 @@
-//package expertWebCrawler;
-package webchase;
+package expertWebCrawler;
 
 import java.util.*;
 
@@ -27,15 +26,17 @@ public class ResultView {
 		branches = new ArrayList<>();
 		
 		for(WebPage pageWithResults: pagesWithResults) {
-			this.urls.add(pageWithResults.getURL());
-			this.outputs.add(pageWithResults.getOutput());
+			if(pageWithResults.getOutput() != null && pageWithResults.getOutput().size() != 0) {
+				this.urls.add(pageWithResults.getURL());
+				this.outputs.add(pageWithResults.getOutput());
+			}
 		}
 		
 		TreeItem<String> root = new TreeItem<>();
 		root.setExpanded(true);
 		resultTree.setShowRoot(false);
 		
-		for(int i = 0; i < urls.size(); i++) {
+		for(int i = 0; i < urls.size(); i++) {	
 			branches.add(makeBranch(urls.get(i), root));
 			//System.out.println(urls.get(i));
 			
