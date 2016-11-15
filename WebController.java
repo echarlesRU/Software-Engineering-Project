@@ -25,7 +25,7 @@ public class WebController {
      * @param _terms User inputed search terms
      * @param _depth User inputed search depth
      */
-    WebController(List<String> _initialURLs, List<String> _terms, int _depth){
+    public WebController(List<String> _initialURLs, List<String> _terms, int _depth){
         this.initialURLs = _initialURLs;
         this.terms = _terms;
         this.depth = _depth;

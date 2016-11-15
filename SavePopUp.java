@@ -1,4 +1,4 @@
-package expertWebCrawler;
+package webchase;
 
 import javafx.application.*;
 import javafx.stage.*;
