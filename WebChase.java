@@ -1,10 +1,11 @@
 package webchase;
 
-import javafx.application.Application;
 import java.util.*;
+import javafx.application.Application;
 
 /**
- *
+ * WebChase Application v1.0
+ * See README for more information.
  * @author John Filipowicz
  */
 public class WebChase {
@@ -13,9 +14,8 @@ public class WebChase {
      * Launches the application
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         Application.launch(PrimaryView.class, args);
-        //TestClass test = new TestClass("http://www.radford.edu/~nokie/classes/320/", "generic package");
     }
     
 }

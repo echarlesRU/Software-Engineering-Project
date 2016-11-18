@@ -1,4 +1,3 @@
-//package expertWebCrawler;
 package webchase;
 
 import java.io.IOException;
@@ -12,14 +11,13 @@ import org.jsoup.select.*;
  * WebPage containing its occurrences of certain terms
  * @author John Filipowicz
  */
-public class WebPage {
-    List<String> pageURLs;       //All URLs found on this page
-    List<String> thisOutput;     //All found terms on this page
-    List<String> terms;          //Terms to search for
-    List<String> tagsToScan;     //Tags to scan in the html of this page 
-    String thisURL;              //URL of this WebPage
-    Document pageHTML;           //Raw HTML of this page
-    
+public class WebPage extends Thread{
+    private List<String> pageURLs;       //All URLs found on this page
+    private List<String> thisOutput;     //All found terms on this page
+    private List<String> terms;          //Terms to search for
+    private List<String> tagsToScan;     //Tags to scan in the html of this page 
+    private String thisURL;              //URL of this WebPage
+    public Document pageHTML;           //Raw HTML of this page
     
     /**
      * Initialize all fields of the WebPage
@@ -32,14 +30,11 @@ public class WebPage {
         
         try{
             Cleaner sanitize = new Cleaner(Whitelist.relaxed());
-//System.out.println(thisURL);
             pageHTML = Jsoup.connect(this.thisURL).get();
             pageHTML = sanitize.clean(pageHTML);
             
             this.thisOutput = new ArrayList();
             this.initTags();
-            //this.initURLs();
-            //this.scanPage();
         } catch (IOException e){}
     }
     
@@ -65,25 +60,31 @@ public class WebPage {
         tagsToScan.add("pre");
     }
     
-    public void initURLs() throws IOException{
+    @Override
+    public void run(){
+        try {
+            this.initURLs();
+            this.scanPage();
+        } catch (IOException e){}
+    }
+    
+    private void initURLs() throws IOException{
         this.pageURLs = new ArrayList();
-        Elements anchorTags = pageHTML.getElementsByTag("a");
+        Elements anchorTags = null;
+        if(pageHTML != null)
+            anchorTags = pageHTML.getElementsByTag("a");
         
-        for (Element link : anchorTags) {
+        for (Element link : this.emptyIfNull(anchorTags)){
             String href = link.attr("abs:href");
             this.pageURLs.add(href);
         }
-            
-            //System.out.println(doc);
-        System.out.println("\n" + pageHTML.title());
-        
     }
     
     /**
      * Scan this WebPage's content for the search terms
      * @throws IOException
      */
-    public void scanPage() throws IOException{
+    private void scanPage() throws IOException{
         //For each search term
         for(String term: this.emptyIfNull(this.terms)){
             //For each searchable tag

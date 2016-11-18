@@ -1,23 +1,29 @@
-//package expertWebCrawler;
 package webchase;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
-import org.jsoup.helper.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * Takes the user input from the view, processes it, then returns a list of
- *     WebPage objects containing all output results.
+ * Takes the user input from the view, processes it, then allows a list of
+ *     WebPage objects containing all output results to be retrieved.
  * @author John Filipowicz
  */
-public class WebController {
-    List<String> initialURLs;     //List of user inputed URLs
-    List<String> terms;           //List of user inputed terms
-    List<WebPage> scannedPages;   //List of scanned WebPages
-    Queue<String> yetToScan;      //Queue of URLs to create as WebPage & scan
-    int depth;                    //User inputed depth of search
-    final int MIN_URL_LENGTH = 7; //Defines minumum url length as "xyz.abc"
+public class WebController extends Thread {
+    private List<String> initialURLs;     //List of user inputed URLs
+    private List<String> terms;           //List of user inputed terms
+    private int depth;                    //User inputed depth of search
+    
+    private List<WebPage> scannedPages;   //List of scanned WebPages
+    private Queue<String> yetToScan;      //Queue of URLs to be scanned
+    private List<String> beenQueued;      //List of URLs that have been queued
+    
+    //Defines minumum url length: http://ab.cde
+    private final int MIN_URL_LENGTH = 13;
+    //Defines max wait time for a thread to 1 minute
+    private final int MAX_WAIT = 60000;
     
     /**
      * Initialize all fields
@@ -32,57 +38,80 @@ public class WebController {
         
         this.yetToScan = new LinkedBlockingQueue();
         this.scannedPages = new ArrayList();
+        this.beenQueued = new ArrayList();
+    }
+    
+    @Override
+    public void run(){
         try{
             this.scanPages();
-        } catch(IOException e){}
+        } catch(IOException | InterruptedException e){}
     }
     
     /**
      * Scans all initial URLs and their nested URLs to depth, initializing the
      *     list of scanned WebPages. Each WebPage will contain their discovered
      *     output.
+     * @throws IOException
+     * @throws InterruptedException
      */
-    private void scanPages() throws IOException{
-        //For to initialize the threads[] and start
-        //For to join and return... themselves?
-        // Blocking queue take for threads
+    private void scanPages() throws IOException, InterruptedException{
+        List<WebPage> scanning = new ArrayList();
         
-        // Working with single thread first
-        for(String url: this.initialURLs){
-//System.out.println(url);
+        // Scanning initial URLs
+        for(String url: this.emptyIfNull(this.initialURLs)){
             WebPage initWebPage = new WebPage(url, this.terms);
-            initWebPage.initURLs();
-            initWebPage.scanPage();
-                
-            // Adds all nested urls into the queue
-            this.scannedPages.add(initWebPage);
-            for(String nestedURL: initWebPage.getPageURLs()){
-                if(this.isValidURL(nestedURL))
+            initWebPage.start();
+            scanning.add(initWebPage);
+        }
+        
+        for(WebPage page: this.emptyIfNull(scanning)){
+            page.join(this.MAX_WAIT);
+            this.scannedPages.add(page);
+            
+            for(String nestedURL: this.emptyIfNull(page.getPageURLs())){
+                if(this.isValidURL(nestedURL)){
                     this.yetToScan.add(nestedURL);
+                    this.beenQueued.add(nestedURL);
+                }
             }
         }
+        
         // Since the first layer has been scanned
         this.depth = this.depth - 1;
         
-        //For demo only
-        while(this.yetToScan.peek() != null){
-//System.out.println(this.yetToScan.peek());
-            WebPage nextPage = new WebPage(yetToScan.remove(), this.terms);
-            nextPage.scanPage();
-            this.scannedPages.add(nextPage);
-        }
-        //End for demo only
+        if(depth > 0)
+            this.scanQueue();
+    }
+    
+    /**
+     * Scan the URLs on the queue and add their nested URLs 
+     * @throws InterruptedException 
+     */
+    private void scanQueue() throws InterruptedException{
+        List<WebPage> scanning = new ArrayList();
         
-        /*
-        //In progress, do not use
-        while(depth > 0){
-            if(yetToScan.peek() != null){
-                url = yetToScan.remove();
-                
-                WebPage nextToScan = new WebPage(url, this.terms);
+        while(this.yetToScan.peek() != null){
+            WebPage nextPage = new WebPage(this.yetToScan.remove(), this.terms);
+            nextPage.start();
+            scanning.add(nextPage);
+        }
+        
+        for(WebPage page: this.emptyIfNull(scanning)){
+            page.join(this.MAX_WAIT);
+            this.scannedPages.add(page);
+            
+            for(String nestedURL: this.emptyIfNull(page.getPageURLs())){
+                if(this.isValidURL(nestedURL)){
+                    this.yetToScan.add(nestedURL);
+                    this.beenQueued.add(nestedURL);
+                }
             }
         }
-        */
+        this.depth = this.depth - 1;
+        
+        if(this.depth > 0)
+            this.scanQueue();
     }
     
     /**
@@ -94,7 +123,7 @@ public class WebController {
         boolean result = false;
         
         if(url != null && url.length() >= this.MIN_URL_LENGTH){
-            if(!this.haveScanned(url)){
+            if(!this.haveQueued(url)){
                 result = true;
             }
         }
@@ -107,11 +136,11 @@ public class WebController {
      * @param url URL to check for
      * @return boolean if it has been scanned
      */
-    private boolean haveScanned(String url){
+    private boolean haveQueued(String url){
         boolean result = false;
         
-        for(WebPage scanned: scannedPages){
-            if (scanned.getURL().equalsIgnoreCase(url)){
+        for(String queued: this.emptyIfNull(this.beenQueued)){
+            if (queued.equalsIgnoreCase(url)){
                 result = true;
             }
         }
@@ -119,7 +148,7 @@ public class WebController {
         return result;
     }
     
-    /**
+     /**
      * Source reference: 
      *    stackoverflow.com/questions/2250031/null-check-in-an-enhanced-for-loop
      * Returns an empty Iterable object if param is null, or param if it is not.
@@ -130,7 +159,6 @@ public class WebController {
     private <T>Iterable<T> emptyIfNull(Iterable<T> iterable) {
         return iterable == null ? Collections.emptyList() : iterable;
     }
-    
     
     /**
      * Gets the scanned WebPage objects
