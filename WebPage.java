@@ -2,6 +2,7 @@ package webchase;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.Callable;
 import org.jsoup.*;
 import org.jsoup.nodes.*;
 import org.jsoup.safety.*;
@@ -11,66 +12,56 @@ import org.jsoup.select.*;
  * WebPage containing its occurrences of certain terms
  * @author John Filipowicz
  */
-public class WebPage extends Thread{
-    private List<String> pageURLs;       //All URLs found on this page
-    private List<String> thisOutput;     //All found terms on this page
-    private List<String> terms;          //Terms to search for
-    private List<String> tagsToScan;     //Tags to scan in the html of this page 
-    private String thisURL;              //URL of this WebPage
-    public Document pageHTML;           //Raw HTML of this page
+public class WebPage implements Callable{
+    private List<String> pageURLs;        //All URLs found on this page
+    private List<String> thisOutput;      //All found terms on this page
+    private final List<String> terms;     //Terms to search for
+    private final List<String> tagsToScan;//HTML tags to scan for terms 
+    private final String thisURL;         //URL of this WebPage
+    //private Document pageHTML;            //Raw HTML of this page
+    private final int depth;              //Depth of WebPage
     
     /**
      * Initialize all fields of the WebPage
      * @param _thisURL the url of this WebPage
      * @param _terms The terms to be searched for
+     * @param _tags The tags to scan for terms
+     * @param _depth The depth level of this WebPage
      */
-    public WebPage(String _thisURL, List<String> _terms) {
+    public WebPage(String _thisURL, List<String> _terms, List<String> _tags, int _depth) {
         this.thisURL = _thisURL;
         this.terms = _terms;
+        this.tagsToScan = _tags;
+        this.depth = _depth;
         
-        try{
+        this.thisOutput = new ArrayList();
+    }
+    
+    @Override
+    public WebPage call(){
+        Document pageHTML;
+        try {
             Cleaner sanitize = new Cleaner(Whitelist.relaxed());
             pageHTML = Jsoup.connect(this.thisURL).get();
             pageHTML = sanitize.clean(pageHTML);
             
-            this.thisOutput = new ArrayList();
-            this.initTags();
+            if(depth > 1)
+                this.initURLs(pageHTML);
+            this.scanPage(pageHTML);
         } catch (IOException e){}
+     
+        return this;
     }
     
     /**
-     * Initializes the TagsToScan field
+     * Initialize the pageURLs field with the nested URLs of the web page
+     * @param pageHTML
+     * @throws IOException 
      */
-    private void initTags(){
-        //p, li, td, th, a, b, pre, h(1..6)
-        tagsToScan = new ArrayList(13);
-                
-        tagsToScan.add("p");
-        tagsToScan.add("li");
-        tagsToScan.add("td");
-        tagsToScan.add("th");
-        tagsToScan.add("h1");
-        tagsToScan.add("h2");
-        tagsToScan.add("h3");
-        tagsToScan.add("h4");
-        tagsToScan.add("h5");
-        tagsToScan.add("h6");
-        tagsToScan.add("a");
-        tagsToScan.add("b");
-        tagsToScan.add("pre");
-    }
-    
-    @Override
-    public void run(){
-        try {
-            this.initURLs();
-            this.scanPage();
-        } catch (IOException e){}
-    }
-    
-    private void initURLs() throws IOException{
+    private void initURLs(Document pageHTML) throws IOException{
         this.pageURLs = new ArrayList();
         Elements anchorTags = null;
+        
         if(pageHTML != null)
             anchorTags = pageHTML.getElementsByTag("a");
         
@@ -84,7 +75,7 @@ public class WebPage extends Thread{
      * Scan this WebPage's content for the search terms
      * @throws IOException
      */
-    private void scanPage() throws IOException{
+    private void scanPage(Document pageHTML) throws IOException{
         //For each search term
         for(String term: this.emptyIfNull(this.terms)){
             //For each searchable tag
@@ -115,6 +106,14 @@ public class WebPage extends Thread{
     }
     
     /**
+     * Gets the WebPage's depth
+     * @return int depth
+     */
+    public int getDepth(){
+        return this.depth;
+    }
+    
+    /**
      * Gets the WebPage's URL
      * @return String pageURL
      */
@@ -136,15 +135,5 @@ public class WebPage extends Thread{
      */
     public List<String> getOutput(){
         return thisOutput;
-    }
-    
-    /**
-     * Returns if the url of this WebPage is equal to o's
-     * @param o Object to compare to
-     * @return boolean if the object is equal to this
-     */
-    @Override
-    public boolean equals(Object o){
-        return this.thisURL.equals(((WebPage)o).getURL());
     }
 }

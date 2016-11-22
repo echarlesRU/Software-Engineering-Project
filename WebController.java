@@ -3,8 +3,6 @@ package webchase;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Takes the user input from the view, processes it, then allows a list of
@@ -12,18 +10,20 @@ import java.util.logging.Logger;
  * @author John Filipowicz
  */
 public class WebController extends Thread {
-    private List<String> initialURLs;     //List of user inputed URLs
-    private List<String> terms;           //List of user inputed terms
-    private int depth;                    //User inputed depth of search
+    private final List<String> initialURLs;    //List of user inputed URLs
+    private final List<String> terms;          //List of user inputed terms
+    private final int depth;                   //User inputed depth of search
+    private int lastScanned;                   //Last page w/nested urls scanned
+    private int waiting;                       //Number of pages scanning
     
-    private List<WebPage> scannedPages;   //List of scanned WebPages
-    private Queue<String> yetToScan;      //Queue of URLs to be scanned
-    private List<String> beenQueued;      //List of URLs that have been queued
+    private List<Future<WebPage>> scannedPages;//List of scanned WebPages
+    private List<String> urlsScanned;          //List of scanned page URLs
+    private List<String> tagsToScan;           //Tags to be scanned for terms
+    private final ExecutorService threads;     //Thread pool
     
     //Defines minumum url length: http://ab.cde
     private final int MIN_URL_LENGTH = 13;
-    //Defines max wait time for a thread to 1 minute
-    private final int MAX_WAIT = 60000;
+    private final int MAX_WAITING = 250;       //Maximum URLs processed at once
     
     /**
      * Initialize all fields
@@ -35,17 +35,42 @@ public class WebController extends Thread {
         this.initialURLs = _initialURLs;
         this.terms = _terms;
         this.depth = _depth;
+        this.lastScanned = 0;
         
-        this.yetToScan = new LinkedBlockingQueue();
+        this.threads = Executors.newCachedThreadPool();
         this.scannedPages = new ArrayList();
-        this.beenQueued = new ArrayList();
+        this.urlsScanned = new ArrayList();
+        this.initTags();
+    }
+    
+    /**
+     * Initializes the TagsToScan field
+     */
+    private void initTags(){
+        //p, li, td, th, a, b, pre, h(1..6)
+        tagsToScan = new ArrayList(13);
+                
+        tagsToScan.add("p");
+        tagsToScan.add("li");
+        tagsToScan.add("td");
+        tagsToScan.add("th");
+        tagsToScan.add("h1");
+        tagsToScan.add("h2");
+        tagsToScan.add("h3");
+        tagsToScan.add("h4");
+        tagsToScan.add("h5");
+        tagsToScan.add("h6");
+        tagsToScan.add("a");
+        tagsToScan.add("b");
+        tagsToScan.add("pre");
     }
     
     @Override
     public void run(){
         try{
             this.scanPages();
-        } catch(IOException | InterruptedException e){}
+            threads.shutdown();
+        } catch(IOException | InterruptedException | ExecutionException e){}
     }
     
     /**
@@ -55,63 +80,56 @@ public class WebController extends Thread {
      * @throws IOException
      * @throws InterruptedException
      */
-    private void scanPages() throws IOException, InterruptedException{
-        List<WebPage> scanning = new ArrayList();
-        
+    private void scanPages()
+            throws IOException, ExecutionException, InterruptedException{
         // Scanning initial URLs
         for(String url: this.emptyIfNull(this.initialURLs)){
-            WebPage initWebPage = new WebPage(url, this.terms);
-            initWebPage.start();
-            scanning.add(initWebPage);
+            WebPage initWebPage = new WebPage(url, this.terms, this.tagsToScan, this.depth);
+            this.scannedPages.add(threads.submit(initWebPage));
+            this.urlsScanned.add(url);
         }
+        this.scanToDepth();
+    }
+    
+    private void scanToDepth() throws InterruptedException, ExecutionException{
+System.out.println("Size: " + this.scannedPages.size());
+        boolean validURL = false;
+        int scannedSize = this.scannedPages.size();
         
-        for(WebPage page: this.emptyIfNull(scanning)){
-            page.join(this.MAX_WAIT);
-            this.scannedPages.add(page);
+        //submits the valid urls of the previously scanned pages to the thread pool
+        for(; this.lastScanned < scannedSize; this.lastScanned++){
             
-            for(String nestedURL: this.emptyIfNull(page.getPageURLs())){
-                if(this.isValidURL(nestedURL)){
-                    this.yetToScan.add(nestedURL);
-                    this.beenQueued.add(nestedURL);
-                }
+            if(waiting > this.MAX_WAITING){
+                this.clearWaiting();
+                waiting = 0;
+            }
+            
+            for(String nestedURL: this.emptyIfNull(this.scannedPages.get(this.lastScanned).get().getPageURLs())){
+                int pageDepth = this.scannedPages.get(this.lastScanned).get().getDepth();
+                    if((pageDepth - 1 > 0) && this.isValidURL(nestedURL)){
+                        WebPage nextPage = new WebPage(nestedURL, this.terms, this.tagsToScan, pageDepth - 1);
+                        validURL = true;
+                        waiting++;
+                        scannedPages.add(threads.submit(nextPage));
+                        this.urlsScanned.add(nestedURL);
+                    }
             }
         }
-        
-        // Since the first layer has been scanned
-        this.depth = this.depth - 1;
-        
-        if(depth > 0)
-            this.scanQueue();
+        if(validURL){
+            this.scanToDepth();
+        }
     }
     
     /**
-     * Scan the URLs on the queue and add their nested URLs 
-     * @throws InterruptedException 
+     * Finishes termination of all current threads in the pool
+     * @throws InterruptedException
+     * @throws ExecutionException 
      */
-    private void scanQueue() throws InterruptedException{
-        List<WebPage> scanning = new ArrayList();
-        
-        while(this.yetToScan.peek() != null){
-            WebPage nextPage = new WebPage(this.yetToScan.remove(), this.terms);
-            nextPage.start();
-            scanning.add(nextPage);
+    private void clearWaiting() throws InterruptedException, ExecutionException{
+//System.out.println("-------Clear Waiting------------");
+        for(Future<WebPage> page: this.scannedPages){
+            page.get();
         }
-        
-        for(WebPage page: this.emptyIfNull(scanning)){
-            page.join(this.MAX_WAIT);
-            this.scannedPages.add(page);
-            
-            for(String nestedURL: this.emptyIfNull(page.getPageURLs())){
-                if(this.isValidURL(nestedURL)){
-                    this.yetToScan.add(nestedURL);
-                    this.beenQueued.add(nestedURL);
-                }
-            }
-        }
-        this.depth = this.depth - 1;
-        
-        if(this.depth > 0)
-            this.scanQueue();
     }
     
     /**
@@ -119,15 +137,15 @@ public class WebController extends Thread {
      * @param url
      * @return 
      */
-    private boolean isValidURL(String url){
+    private boolean isValidURL(String url)
+            throws InterruptedException, ExecutionException{
         boolean result = false;
         
-        if(url != null && url.length() >= this.MIN_URL_LENGTH){
-            if(!this.haveQueued(url)){
-                result = true;
-            }
+        if(url != null && url.length() >= this.MIN_URL_LENGTH
+                && url.toLowerCase().charAt(0) == 'h'
+                && !this.urlsScanned.contains(url)){
+            result = true;
         }
-        
         return result;
     }
     
@@ -136,15 +154,16 @@ public class WebController extends Thread {
      * @param url URL to check for
      * @return boolean if it has been scanned
      */
-    private boolean haveQueued(String url){
+    private boolean haveScanned(String url)
+            throws InterruptedException, ExecutionException{
         boolean result = false;
         
-        for(String queued: this.emptyIfNull(this.beenQueued)){
-            if (queued.equalsIgnoreCase(url)){
-                result = true;
-            }
+        for(Future<WebPage> page: this.scannedPages){
+            String urlScanned = page.get().getURL();
+                if (urlScanned.equalsIgnoreCase(url)){
+                    result = true;
+                }
         }
-        
         return result;
     }
     
@@ -161,10 +180,18 @@ public class WebController extends Thread {
     }
     
     /**
+     * Returns if the thread pool is completed running
+     * @return boolean
+     */
+    public boolean isFinished(){
+        return this.threads.isShutdown();
+    }
+    
+    /**
      * Gets the scanned WebPage objects
      * @return WebPage List scanned pages
      */
-    public List<WebPage> getWebPages(){
+    public List<Future<WebPage>> getWebPages(){
         return this.scannedPages;
     }
 }
