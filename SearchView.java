@@ -189,7 +189,14 @@ public class SearchView {
 				termList.getItems().clear();
 				depthTextField.setText("");
 				
-				controller = new WebController(urlArrayList, termArrayList, depth);
+				try {
+					controller = new WebController(urlArrayList, termArrayList, depth);
+					controller.start();
+					controller.join();
+				} catch (InterruptedException ie) {
+					
+				}
+				//try {System.out.println(controller.getWebPages().get(0).get().getURL());} catch(Exception ee){}
 				
 				int numTabs = primaryView.getTabPane().getTabs().size();
 				ResultView resultView = new ResultView(controller.getWebPages(), numTabs);
