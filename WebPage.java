@@ -18,7 +18,6 @@ public class WebPage implements Callable{
     private final List<String> terms;     //Terms to search for
     private final List<String> tagsToScan;//HTML tags to scan for terms 
     private final String thisURL;         //URL of this WebPage
-    //private Document pageHTML;            //Raw HTML of this page
     private final int depth;              //Depth of WebPage
     
     /**
