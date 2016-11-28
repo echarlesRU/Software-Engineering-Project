@@ -9,12 +9,11 @@ import java.util.concurrent.*;
  *     WebPage objects containing all output results to be retrieved.
  * @author John Filipowicz
  */
-public class WebController extends Thread{
-//public class WebController implements Runnable{
+//public class WebController extends Thread{
+public class WebController extends Observable implements Runnable{
     private final List<String> initialURLs;    //List of user inputed URLs
     private final List<String> terms;          //List of user inputed terms
     private final int depth;                   //User inputed depth of search
-    private int lastScanned;                   //Last page w/nested urls scanned
     private int addedPages;                    //Number of pages scanning
     
     private ArrayList<Future<WebPage>> scannedPages;//List of scanned WebPages
@@ -23,8 +22,8 @@ public class WebController extends Thread{
     private final ExecutorService threads;     //Thread pool
     
     private String fileName;                   //Name of file writen to
-    private String urlKey;                     //Identifier for a url line
-    private String outputKey;                  //Identifier for an output line
+    private final String urlKey;               //Identifier for a url line
+    private final String outputKey;            //Identifier for an output line
     
     //Defines minumum url length: http://ab.cde
     private final int MIN_URL_LENGTH = 13;
@@ -42,7 +41,6 @@ public class WebController extends Thread{
         this.initialURLs = _initialURLs;
         this.terms = _terms;
         this.depth = _depth;
-        this.lastScanned = 0;
         
         this.threads = Executors.newCachedThreadPool();
         this.scannedPages = new ArrayList();
@@ -81,6 +79,7 @@ public class WebController extends Thread{
         try{
             this.scanPages();
             threads.shutdown();
+            super.notifyObservers();
         } catch(IOException | InterruptedException | ExecutionException e){}
     }
     
@@ -103,7 +102,7 @@ public class WebController extends Thread{
     }
     
     /**
-     * 
+     * Scans all pages while depth is > 0. Writes to disk periodically.
      * @throws InterruptedException
      * @throws ExecutionException
      * @throws IOException 
@@ -122,7 +121,7 @@ public class WebController extends Thread{
                         this.urlsScanned.add(nestedURL);
                     }
                     if(this.addedPages > this.MAX_BEFORE_WRITE){
-                        this.write(i + 1);
+                        this.write(i);
                         i = 0;
                         this.addedPages = this.scannedPages.size();
                     }

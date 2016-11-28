@@ -20,11 +20,14 @@ public class WebChase {
         List<String> urls = new ArrayList();
         List<String> terms = new ArrayList();
         
-        urls.add("http://www.radford.edu/~nokie/classes/320/");
-        terms.add("generic packages");
+        //urls.add("http://www.radford.edu/~nokie/classes/320/");
+        //terms.add("generic packages");
+        urls.add("http://www.google.com");
+        terms.add("google");
         
-        WebController wc = new WebController(urls,terms,5);
-        wc.start();
-        wc.join();
+        WebController wc = new WebController(urls,terms,2);
+        Thread t = new Thread(wc);
+        t.start();
+        t.join();
     }
 }
