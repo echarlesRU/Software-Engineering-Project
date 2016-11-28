@@ -7,8 +7,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTreeCell;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.*;
 
 public class ResultView {
 	
@@ -21,7 +25,14 @@ public class ResultView {
 	TreeView<String> resultTree;
 	List<CheckBoxTreeItem<String>> branches;
 	
+	Button selectAll, save;
+	
 	public ResultView(List<Future<WebPage>> results, int resultNum) {
+		createUIElements(results, resultNum);
+		addActionListeners();
+	}
+	
+	private void createUIElements(List<Future<WebPage>> results, int resultNum) {
 		pagesWithResults = new ArrayList<WebPage>();
 		
 		try 				  {for(Future<WebPage> result: results) {pagesWithResults.add(result.get());}
@@ -34,6 +45,12 @@ public class ResultView {
 		
 		resultTree = new TreeView<>();
 		branches = new ArrayList<>();
+		
+		selectAll = new Button("Select All");
+		save = new Button("Save");
+		
+		BorderPane view = new BorderPane();
+		HBox bottom = new HBox();
 		
 		if(pagesWithResults != null) {
 			for(WebPage pageWithResults: pagesWithResults) {
@@ -74,11 +91,31 @@ public class ResultView {
 				//System.out.println(outputs.get(i).get(j));
 			}
 		}
-		
-		resultsTab.setContent(resultTree);
-		
+
 		resultTree.setCellFactory(CheckBoxTreeCell.forTreeView());
 		resultTree.setRoot(root);
+		
+		bottom.setPadding(new Insets(10));
+		bottom.setSpacing(10);
+		bottom.getChildren().addAll(selectAll, save);
+		
+		view.setCenter(resultTree);
+		view.setBottom(bottom);
+		
+		resultsTab.setContent(view);
+	}
+	
+	private void addActionListeners() {
+		selectAll.setOnMouseClicked(e -> handleSelectAllButtonAction(e));
+		save.setOnMouseClicked(e -> handleSaveButtonAction(e));
+	}
+	
+	private void handleSelectAllButtonAction(MouseEvent e) {
+		//resultTree
+	}
+	
+	private void handleSaveButtonAction(MouseEvent e) {
+		
 	}
 	
 	public CheckBoxTreeItem<String> makeBranch(CheckBoxTreeItem<String> title, CheckBoxTreeItem<String> parent) {

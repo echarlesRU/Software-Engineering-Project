@@ -16,8 +16,8 @@ public class WebChase {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws InterruptedException, ExecutionException {
-        //Application.launch(PrimaryView.class, args);
-        List<String> urls = new ArrayList();
+        Application.launch(PrimaryView.class, args);
+        /*List<String> urls = new ArrayList();
         List<String> terms = new ArrayList();
         
         urls.add("http://www.radford.edu/~nokie/classes/320/");
@@ -42,7 +42,7 @@ public class WebChase {
         }
         }
         
-        System.out.println("\nHits: " + counter);
+        System.out.println("\nHits: " + counter);*/
 
     }
     
