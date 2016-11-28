@@ -1,6 +1,7 @@
 package webchase;
 
 import javafx.scene.layout.*;
+import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
 
@@ -9,11 +10,13 @@ import java.util.*;
 import javafx.geometry.*;
 import javafx.scene.input.*;;
 
-public class SearchView {
+public class SearchView implements Observer{
 	PrimaryView primaryView;
 	
+	BorderPane right;
+	
 	Tab searchTab;
-	TextField urlField, termField, depthTextField;
+	TextField urlField, termField, depthField;
 	Button addUrl, removeUrl, addTerm, removeTerm, searchButton, haltButton;
 	ListView<String> urlList, termList;
 	
@@ -60,12 +63,12 @@ public class SearchView {
 		Label termListLabel = new Label("Search Term(s) to be used:");
 		termList = new ListView<>();
 		
-		BorderPane right = new BorderPane();		
+		right = new BorderPane();		
 		VBox bottomRight = new VBox();
 		
 		HBox depthFieldArea = new HBox();
 		Label depthFieldLabel = new Label("Depth:");
-		depthTextField = new TextField();
+		depthField = new TextField();
 		
 		HBox searchButtonArea = new HBox();
 		searchButton = new Button("Search");
@@ -78,11 +81,15 @@ public class SearchView {
 		urlFieldArea.getChildren().addAll(urlFieldLabel, urlField);
 		
 		addUrl.setMaxWidth(Double.MAX_VALUE);
+		addUrl.setFocusTraversable(false);
 		removeUrl.setMaxWidth(Double.MAX_VALUE);
+		removeUrl.setFocusTraversable(false);
 		
 		urlButtonArea.setPadding(pad);
 		urlButtonArea.setSpacing(15);
 		urlButtonArea.getChildren().addAll(addUrl, removeUrl, urlListLabel);
+		
+		urlList.setFocusTraversable(false);
 		
 		urlListButtonArea.setPadding(pad);
 		urlListButtonArea.setSpacing(5);
@@ -95,11 +102,15 @@ public class SearchView {
 		termFieldArea.getChildren().addAll(termFieldLabel, termField);
 		
 		addTerm.setMaxWidth(Double.MAX_VALUE);
+		addTerm.setFocusTraversable(false);
 		removeTerm.setMaxWidth(Double.MAX_VALUE);
+		removeTerm.setFocusTraversable(false);
 		
 		termButtonArea.setPadding(pad);
 		termButtonArea.setSpacing(15);
 		termButtonArea.getChildren().addAll(addTerm, removeTerm, termListLabel);
+		
+		termList.setFocusTraversable(false);
 		
 		termListButtonArea.setPadding(pad);
 		termListButtonArea.setSpacing(5);
@@ -110,11 +121,14 @@ public class SearchView {
 								  termFieldArea, 
 								  termListButtonArea);
 		
-		depthTextField.setPromptText("4");
+		depthField.setPromptText("4");
 		
 		depthFieldArea.setPadding(pad);
 		depthFieldArea.setSpacing(10);
-		depthFieldArea.getChildren().addAll(depthFieldLabel, depthTextField);
+		depthFieldArea.getChildren().addAll(depthFieldLabel, depthField);
+		
+		searchButton.setFocusTraversable(false);
+		haltButton.setFocusTraversable(false);
 		
 		searchButtonArea.setPadding(pad);
 		searchButtonArea.setSpacing(15);
@@ -138,11 +152,12 @@ public class SearchView {
 		addTerm.setOnMouseClicked(e -> handleAddTermButtonAction(e));
 		removeTerm.setOnMouseClicked(e -> handleRemoveTermButtonAction(e));
 		
-		searchButton.setOnMouseClicked(e -> handleSearchAction(e));
+		searchButton.setOnMouseClicked(e -> handleSearchButtonAction(e));
 		haltButton.setOnMouseClicked(e -> handleHaltAction(e));
 		
 		urlField.setOnKeyPressed(e -> handleEnterUrlButtonAction(e));
 		termField.setOnKeyPressed(e -> handleEnterTermButtonAction(e));
+		depthField.setOnKeyPressed(e -> handleEnterDepthButtonAction(e));
 	}
 	
 	private void handleAddUrlButtonAction(MouseEvent e) {
@@ -165,39 +180,8 @@ public class SearchView {
 		}
 	}
 	
-	private void handleSearchAction(MouseEvent e) {
-		if(depthTextField.getText() != null && !depthTextField.getText().trim().isEmpty()) {
-
-			depth = Integer.parseInt(depthTextField.getText());
-			
-			int urlListSize = urlList.getItems().size();
-			int termListSize = termList.getItems().size();
-			
-			if(urlListSize != 0 && termListSize != 0) {
-				urlArrayList = new ArrayList<String>();
-				termArrayList = new ArrayList<String>();
-		
-				for(String item: urlList.getItems()) {
-					urlArrayList.add(item);
-				}
-			
-				for(String item: termList.getItems()) {
-					termArrayList.add(item);
-				}
-		
-				urlList.getItems().clear();
-				termList.getItems().clear();
-				depthTextField.setText("");
-				
-				controller = new WebController(urlArrayList, termArrayList, depth);
-				
-				int numTabs = primaryView.getTabPane().getTabs().size();
-				ResultView resultView = new ResultView(controller.getWebPages(), numTabs);
-				
-				primaryView.getTabPane().getTabs().add(resultView.getResultTab());
-			}
-				
-		}
+	private void handleSearchButtonAction(MouseEvent e) {
+		search();
 	}
 	
 	private void handleHaltAction(MouseEvent e) {
@@ -213,6 +197,12 @@ public class SearchView {
 	private void handleEnterTermButtonAction(KeyEvent e) {
 		if(e.getCode().equals(KeyCode.ENTER)) {
 			addTerm();
+		}
+	}
+	
+	private void handleEnterDepthButtonAction(KeyEvent e) {
+		if(e.getCode().equals(KeyCode.ENTER)) {
+			search();
 		}
 	}
 	
@@ -280,6 +270,55 @@ public class SearchView {
 		}
 		
 		return;
+	}
+	
+	private void search() {
+		if(depthField.getText() != null && !depthField.getText().trim().isEmpty()) {
+
+			depth = Integer.parseInt(depthField.getText());
+			
+			int urlListSize = urlList.getItems().size();
+			int termListSize = termList.getItems().size();
+			
+			if(urlListSize != 0 && termListSize != 0) {
+				urlArrayList = new ArrayList<String>();
+				termArrayList = new ArrayList<String>();
+		
+				for(String item: urlList.getItems()) {
+					urlArrayList.add(item);
+				}
+			
+				for(String item: termList.getItems()) {
+					termArrayList.add(item);
+				}
+		
+				urlList.getItems().clear();
+				termList.getItems().clear();
+				depthField.setText("");
+				
+				right.setCenter(new ProgressIndicator(-1.0f));
+				right.getCenter().setScaleX(.5);
+				right.getCenter().setScaleY(.5);
+				
+				controller = new WebController(urlArrayList, termArrayList, depth);
+				controller.addObserver(this);
+				Thread t = new Thread(controller);
+				t.start();
+				
+				//try {System.out.println(controller.getWebPages().get(0).get().getURL());} catch(Exception ee){}
+			}
+				
+		}
+	}
+	
+	public void update(Observable obs, Object msg) {
+		right.setCenter(null);
+		
+		int numTabs = primaryView.getTabPane().getTabs().size();
+		ResultView resultView = new ResultView(((WebController)obs).getWebPages(), numTabs);
+		
+		primaryView.getTabPane().getTabs().add(resultView.getResultTab());
+		primaryView.getTabPane().getSelectionModel().select(primaryView.getTabPane().getTabs().size() - 1);
 	}
 	
 	public Tab getSearchView() {

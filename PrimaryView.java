@@ -15,8 +15,8 @@ public class PrimaryView extends Application {
 	Scene primaryScene;
 	BorderPane mainLayout;
 	
-	MenuBar menuBar;
-	Menu open, save, help;
+	//MenuBar menuBar;
+	//Menu open, save, help;
 	
 	TabPane tabPane;
 	
@@ -33,11 +33,11 @@ public class PrimaryView extends Application {
 		
 		mainLayout = new BorderPane();
 		
-		menuBar = new MenuBar();
+		//menuBar = new MenuBar();
 		
-		open = new Menu("Open");
-		save = new Menu("Save");
-		help = new Menu("Help");
+		//open = new Menu("Open");
+		//save = new Menu("Save");
+		//help = new Menu("Help");
 		
 		tabPane = new TabPane();
 		
@@ -47,15 +47,15 @@ public class PrimaryView extends Application {
 		
 		//testTab = new Tab("Test Tab");
 		
-		menuBar.getMenus().addAll(open, save, help);
+		//menuBar.getMenus().addAll(open, save, help);
 		
 		tabPane.getTabs().add(searchView.getSearchView());
 		tabPane.setTabClosingPolicy(TabClosingPolicy.ALL_TABS);
 		
-		mainLayout.setTop(menuBar);
+		//mainLayout.setTop(menuBar);
 		mainLayout.setCenter(tabPane);
 		
-		primaryScene = new Scene(mainLayout, 800, 600);
+		primaryScene = new Scene(mainLayout, 700, 600);
 		
 		primaryStage.setScene(primaryScene);
 		primaryStage.centerOnScreen();
