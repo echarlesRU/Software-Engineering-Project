@@ -274,9 +274,12 @@ public class SearchView implements Observer{
 	
 	private void search() {
 		if(depthField.getText() != null && !depthField.getText().trim().isEmpty()) {
-
-			depth = Integer.parseInt(depthField.getText());
-			
+			try {
+				depth = Integer.parseInt(depthField.getText());
+			} catch (NumberFormatException e) {
+				illegalDepth(depthField.getText());
+				return;
+			}
 			int urlListSize = urlList.getItems().size();
 			int termListSize = termList.getItems().size();
 			
@@ -307,8 +310,20 @@ public class SearchView implements Observer{
 				
 				//try {System.out.println(controller.getWebPages().get(0).get().getURL());} catch(Exception ee){}
 			}
+			
+			else {
+				illegalDepth(depthField.getText());
+			}
 				
 		}
+	}
+	
+	public void illegalDepth(String depth) {
+		Alert alert = new Alert(AlertType.WARNING);
+		alert.setTitle("Illegal Depth Argument");
+		alert.setContentText("Depth must be an integer 1, 7, 92, etc.");
+
+		alert.showAndWait();
 	}
 	
 	public void update(Observable obs, Object msg) {
