@@ -1,6 +1,6 @@
 package webchase;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -9,21 +9,27 @@ import java.util.concurrent.*;
  *     WebPage objects containing all output results to be retrieved.
  * @author John Filipowicz
  */
-public class WebController extends Thread {
+//public class WebController extends Thread{
+public class WebController extends Observable implements Runnable{
     private final List<String> initialURLs;    //List of user inputed URLs
     private final List<String> terms;          //List of user inputed terms
     private final int depth;                   //User inputed depth of search
-    private int lastScanned;                   //Last page w/nested urls scanned
-    private int waiting;                       //Number of pages scanning
+    private int addedPages;                    //Number of pages scanning
     
-    private List<Future<WebPage>> scannedPages;//List of scanned WebPages
-    private List<String> urlsScanned;          //List of scanned page URLs
+    private ArrayList<Future<WebPage>> scannedPages;//List of scanned WebPages
+    private ArrayList<String> urlsScanned;          //List of scanned page URLs
     private List<String> tagsToScan;           //Tags to be scanned for terms
     private final ExecutorService threads;     //Thread pool
     
+    private String fileName;                   //Name of file writen to
+    private final String urlKey;               //Identifier for a url line
+    private final String outputKey;            //Identifier for an output line
+    
     //Defines minumum url length: http://ab.cde
     private final int MIN_URL_LENGTH = 13;
-    private final int MAX_WAITING = 250;       //Maximum URLs processed at once
+    private final int MAX_BEFORE_WRITE = 75;  //Maximum URLs processed at once
+    //Maximum URLS held for duplicate comparisions
+    private final int MAX_URL_STORED = 750;
     
     /**
      * Initialize all fields
@@ -35,12 +41,15 @@ public class WebController extends Thread {
         this.initialURLs = _initialURLs;
         this.terms = _terms;
         this.depth = _depth;
-        this.lastScanned = 0;
         
         this.threads = Executors.newCachedThreadPool();
         this.scannedPages = new ArrayList();
         this.urlsScanned = new ArrayList();
         this.initTags();
+        
+        this.fileName = null;
+        this.urlKey = "-~-";
+        this.outputKey = "\t-@-";
     }
     
     /**
@@ -70,6 +79,7 @@ public class WebController extends Thread {
         try{
             this.scanPages();
             threads.shutdown();
+            super.notifyObservers();
         } catch(IOException | InterruptedException | ExecutionException e){}
     }
     
@@ -85,51 +95,82 @@ public class WebController extends Thread {
         // Scanning initial URLs
         for(String url: this.emptyIfNull(this.initialURLs)){
             WebPage initWebPage = new WebPage(url, this.terms, this.tagsToScan, this.depth);
-            this.scannedPages.add(threads.submit(initWebPage));
+            this.scannedPages.add(this.threads.submit(initWebPage));
             this.urlsScanned.add(url);
         }
         this.scanToDepth();
     }
     
-    private void scanToDepth() throws InterruptedException, ExecutionException{
-System.out.println("Size: " + this.scannedPages.size());
-        boolean validURL = false;
-        int scannedSize = this.scannedPages.size();
-        
-        //submits the valid urls of the previously scanned pages to the thread pool
-        for(; this.lastScanned < scannedSize; this.lastScanned++){
-            
-            if(waiting > this.MAX_WAITING){
-                this.clearWaiting();
-                waiting = 0;
-            }
-            
-            for(String nestedURL: this.emptyIfNull(this.scannedPages.get(this.lastScanned).get().getPageURLs())){
-                int pageDepth = this.scannedPages.get(this.lastScanned).get().getDepth();
+    /**
+     * Scans all pages while depth is > 0. Writes to disk periodically.
+     * @throws InterruptedException
+     * @throws ExecutionException
+     * @throws IOException 
+     */
+    private void scanToDepth()
+            throws InterruptedException, ExecutionException, IOException{
+        //submits valid urls of the previously scanned pages to thread pool
+        for(int i = 0; i < this.scannedPages.size(); i++){
+            //processes valid nested urls
+            for(String nestedURL: this.emptyIfNull(this.scannedPages.get(i).get().getPageURLs())){
+                int pageDepth = this.scannedPages.get(i).get().getDepth();
                     if((pageDepth - 1 > 0) && this.isValidURL(nestedURL)){
                         WebPage nextPage = new WebPage(nestedURL, this.terms, this.tagsToScan, pageDepth - 1);
-                        validURL = true;
-                        waiting++;
-                        scannedPages.add(threads.submit(nextPage));
+                        this.addedPages++;
+                        this.scannedPages.add(this.threads.submit(nextPage));
                         this.urlsScanned.add(nestedURL);
+                    }
+                    if(this.addedPages > this.MAX_BEFORE_WRITE){
+                        this.write(i);
+                        i = 0;
+                        this.addedPages = this.scannedPages.size();
+                    }
+                    if(this.urlsScanned.size() > this.MAX_URL_STORED){
+                        int size = this.urlsScanned.size();
+                        this.urlsScanned = new ArrayList<>(this.urlsScanned.subList(size - size / 10, size));
+                        this.urlsScanned.trimToSize();
                     }
             }
         }
-        if(validURL){
-            this.scanToDepth();
-        }
+        this.write(this.scannedPages.size());
     }
     
     /**
-     * Finishes termination of all current threads in the pool
+     * Write or append to provided file name field all scanned page URLs/output
+     * @throws IOException
      * @throws InterruptedException
      * @throws ExecutionException 
      */
-    private void clearWaiting() throws InterruptedException, ExecutionException{
-//System.out.println("-------Clear Waiting------------");
-        for(Future<WebPage> page: this.scannedPages){
-            page.get();
+    private void write(int stopWriteIndex)
+            throws IOException, InterruptedException, ExecutionException{
+        //Writer Initialization
+        FileWriter fWriter;
+        if(this.fileName == null){
+            this.fileName = "writeTest.txt";
+            fWriter = new FileWriter(this.fileName);
         }
+        else{
+            //bool append param: True -> end of file , False -> beginning
+            fWriter = new FileWriter(this.fileName, true);
+        }
+        try (BufferedWriter bWriter = new BufferedWriter(fWriter);
+                PrintWriter pWriter = new PrintWriter(bWriter)) {
+            
+            //Writing scanned page url and output
+            for(int i = 0; i < stopWriteIndex; i++){
+                WebPage page = this.scannedPages.get(i).get();
+                if(!(page.getOutput() == null || page.getOutput().isEmpty())){
+                    pWriter.println(this.urlKey + page.getURL());
+                    for(String output: page.getOutput()){
+                        pWriter.println(this.outputKey + output);
+                    }
+                }
+            }
+            //Reduce list and close write streams
+            this.scannedPages.subList(0, stopWriteIndex).clear();
+            this.scannedPages.trimToSize();
+        }
+        fWriter.close();
     }
     
     /**
@@ -145,24 +186,6 @@ System.out.println("Size: " + this.scannedPages.size());
                 && url.toLowerCase().charAt(0) == 'h'
                 && !this.urlsScanned.contains(url)){
             result = true;
-        }
-        return result;
-    }
-    
-    /**
-     * Returns whether a WebPage with the URL has been scanned
-     * @param url URL to check for
-     * @return boolean if it has been scanned
-     */
-    private boolean haveScanned(String url)
-            throws InterruptedException, ExecutionException{
-        boolean result = false;
-        
-        for(Future<WebPage> page: this.scannedPages){
-            String urlScanned = page.get().getURL();
-                if (urlScanned.equalsIgnoreCase(url)){
-                    result = true;
-                }
         }
         return result;
     }
