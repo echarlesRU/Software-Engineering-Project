@@ -3,6 +3,7 @@ package webchase;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import javafx.application.Platform;
 
 /**
  * Takes the user input from the view, processes it, then allows a list of
@@ -79,7 +80,10 @@ public class WebController extends Observable implements Runnable{
         try{
             this.scanPages();
             threads.shutdown();
-            super.notifyObservers();
+            Platform.runLater(() -> {
+                super.setChanged();
+                super.notifyObservers();
+            });
         } catch(IOException | InterruptedException | ExecutionException e){}
     }
     
