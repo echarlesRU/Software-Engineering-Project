@@ -5,6 +5,8 @@ import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.*;
 
 import javafx.geometry.*;
@@ -274,9 +276,12 @@ public class SearchView implements Observer{
 	
 	private void search() {
 		if(depthField.getText() != null && !depthField.getText().trim().isEmpty()) {
-
-			depth = Integer.parseInt(depthField.getText());
-			
+			try {
+				depth = Integer.parseInt(depthField.getText());
+			} catch (NumberFormatException e) {
+				illegalDepth(depthField.getText());
+				return;
+			}
 			int urlListSize = urlList.getItems().size();
 			int termListSize = termList.getItems().size();
 			
@@ -307,18 +312,87 @@ public class SearchView implements Observer{
 				
 				//try {System.out.println(controller.getWebPages().get(0).get().getURL());} catch(Exception ee){}
 			}
+			
+			else {
+				illegalDepth(depthField.getText());
+			}
 				
 		}
+	}
+	
+	private void illegalDepth(String depth) {
+		Alert alert = new Alert(AlertType.WARNING);
+		alert.setTitle("Illegal Depth Argument");
+		alert.setContentText("Depth must be an integer 1, 7, 92, etc.");
+
+		alert.showAndWait();
 	}
 	
 	public void update(Observable obs, Object msg) {
 		right.setCenter(null);
 		
 		int numTabs = primaryView.getTabPane().getTabs().size();
-		ResultView resultView = new ResultView(((WebController)obs).getWebPages(), numTabs);
+		ResultView resultView = readFile(numTabs);
 		
 		primaryView.getTabPane().getTabs().add(resultView.getResultTab());
 		primaryView.getTabPane().getSelectionModel().select(primaryView.getTabPane().getTabs().size() - 1);
+	}
+	
+	private ResultView readFile(int numTabs) {
+		try {
+			List<String> urls = new ArrayList<>();
+			List<List<String>> output = new ArrayList<>();
+			
+			Scanner s = new Scanner(new File("writeTest.txt"));
+			
+		    String resultString = new String("");
+		    
+		    int counter = -1;
+			
+			while(s.hasNext()) {
+				//System.out.println(resultString);
+				String line = s.nextLine();
+				
+				if(line.startsWith("-~-")) {
+					output.add(new ArrayList<String>());
+					
+					if(resultString.startsWith("-~-")) {
+						urls.add(resultString.substring(3));
+						resultString = line;
+						counter++;
+					}
+					else if(resultString.startsWith("\t-@-")) {
+						output.get(counter).add(resultString.substring(4));
+						resultString = line;
+						counter++;
+					}
+					else {
+						resultString += line;
+						counter++;
+					}
+				}
+				else if(line.startsWith("\t-@-")) {
+					if(resultString.startsWith("-~-")) {
+						urls.add(resultString.substring(3));
+						resultString = line;
+					}
+					else if(resultString.startsWith("\t-@-")) {
+						output.get(counter).add(resultString.substring(4));
+						resultString = line;
+					}
+					else {/*Should never happen*/}
+				}
+				else {resultString += "\n" + line;}
+			}
+			
+			output.get(counter).add(resultString.substring(4));
+			
+			s.close();
+			
+			return new ResultView(urls, output, numTabs);
+		} catch (FileNotFoundException e) {
+			return new ResultView(null, null, numTabs);
+		}
 	}
 	
 	public Tab getSearchView() {
