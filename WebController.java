@@ -80,11 +80,11 @@ public class WebController extends Observable implements Runnable{
         try{
             this.scanPages();
             threads.shutdown();
-            Platform.runLater(() -> {
+        } catch(IOException | InterruptedException | ExecutionException e){}
+        Platform.runLater(() -> {
                 super.setChanged();
                 super.notifyObservers();
             });
-        } catch(IOException | InterruptedException | ExecutionException e){}
     }
     
     /**
