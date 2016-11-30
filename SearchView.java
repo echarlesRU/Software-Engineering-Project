@@ -279,7 +279,8 @@ public class SearchView implements Observer{
 			try {
 				depth = Integer.parseInt(depthField.getText());
 			} catch (NumberFormatException e) {
-				illegalDepth(depthField.getText());
+				createAlert("Illegal Depth Argument: " + depthField.getText(), 
+											"Depth must be an integer 1, 7, 92, etc.");
 				return;
 			}
 			int urlListSize = urlList.getItems().size();
@@ -314,18 +315,11 @@ public class SearchView implements Observer{
 			}
 			
 			else {
-				illegalDepth(depthField.getText());
+				createAlert("Illegal Depth Argument: " + depthField.getText(), 
+										"Depth must be an integer 1, 7, 92, etc.");
 			}
 				
 		}
-	}
-	
-	private void illegalDepth(String depth) {
-		Alert alert = new Alert(AlertType.WARNING);
-		alert.setTitle("Illegal Depth Argument");
-		alert.setContentText("Depth must be an integer 1, 7, 92, etc.");
-
-		alert.showAndWait();
 	}
 	
 	public void update(Observable obs, Object msg) {
