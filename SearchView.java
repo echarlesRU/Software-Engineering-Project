@@ -330,9 +330,7 @@ public class SearchView implements Observer{
 	
 	public void update(Observable obs, Object msg) {
 		if(!(msg instanceof List)) {	
-			if(msg == null) {
-				return;
-			}
+			if(msg == null) {return;}
 			else if(((List<String>)msg).size() == 0) {
 				resetSearchView();
 				createResultView();
@@ -358,8 +356,10 @@ public class SearchView implements Observer{
 		primaryView.getTabPane().getSelectionModel().select(primaryView.getTabPane().getTabs().size() - 1);
 	}
 	
-	private void createAlert(String title, String Content) {
-		
+	private void createAlert(String title, String content) {
+		Alert alert = new Alert(AlertType.WARNING);
+		alert.setTitle(title);
+		alert.setContentText(content);
 	}
 	
 	private String readUnfoundWebsites(List<String> unfoundWebsites) {
