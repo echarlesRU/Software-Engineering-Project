@@ -329,13 +329,52 @@ public class SearchView implements Observer{
 	}
 	
 	public void update(Observable obs, Object msg) {
+		if(!(msg instanceof List)) {	
+			if(msg == null) {
+				return;
+			}
+			else if(((List<String>)msg).size() == 0) {
+				resetSearchView();
+				createResultView();
+			} 
+			else {
+				List<String> unfoundWebsites = (List<String>)msg;
+				resetSearchView();
+				createResultView();
+				createAlert("Some Websites Not Found", readUnfoundWebsites(unfoundWebsites));
+			}
+		}
+	}
+	
+	private void resetSearchView() {
 		right.setCenter(null);
-		
+	}
+	
+	private void createResultView() {
 		int numTabs = primaryView.getTabPane().getTabs().size();
 		ResultView resultView = readFile(numTabs);
-		
+
 		primaryView.getTabPane().getTabs().add(resultView.getResultTab());
 		primaryView.getTabPane().getSelectionModel().select(primaryView.getTabPane().getTabs().size() - 1);
+	}
+	
+	private void createAlert(String title, String Content) {
+		
+	}
+	
+	private String readUnfoundWebsites(List<String> unfoundWebsites) {
+		String unfoundWebsitesString = new String();
+		
+		for(int i = 0; i < unfoundWebsites.size(); i++) {
+			if (i < unfoundWebsites.size() - 1) {
+				unfoundWebsitesString = unfoundWebsites.get(i) + ", ";
+			}
+			else {
+				unfoundWebsitesString = unfoundWebsites.get(i);
+			}
+		}
+		
+		return unfoundWebsitesString;
 	}
 	
 	private ResultView readFile(int numTabs) {
