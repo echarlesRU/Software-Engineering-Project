@@ -212,21 +212,14 @@ public class SearchView implements Observer{
 		if(urlField.getText() != null && !urlField.getText().trim().isEmpty()){
 			for(String item: urlList.getItems()) {
 				if(urlField.getText().equals(item)) {
-					Alert alert = new Alert(AlertType.CONFIRMATION);
-					alert.setTitle("Expert Web Crawler");
-					alert.setHeaderText("This website is already on the list.");
-					alert.setContentText("Do you wish to add the website anyway?");
-					
-					Optional<ButtonType> result = alert.showAndWait();
-					
-					if(result.get() != ButtonType.OK) {
+					if(createConfirmation("This search term is already on the list.",
+							  			  "Do you wish to add the search term anyway?")) {
+						urlList.getItems().add(urlField.getText());
+						urlList.scrollTo(urlList.getItems().size() - 1);
 						urlField.setText("");
 						return;
 					}
-					
 					else {
-						urlList.getItems().add(urlField.getText());
-						urlList.scrollTo(urlList.getItems().size() - 1);
 						urlField.setText("");
 						return;
 					}
@@ -245,21 +238,14 @@ public class SearchView implements Observer{
 		if(termField.getText() != null && !termField.getText().trim().isEmpty()){
 			for(String item: termList.getItems()) {
 				if(termField.getText().equals(item)) {
-					Alert alert = new Alert(AlertType.CONFIRMATION);
-					alert.setTitle("Expert Web Crawler");
-					alert.setHeaderText("This search term is already on the list.");
-					alert.setContentText("Do you wish to add the search term anyway?");
-					
-					Optional<ButtonType> result = alert.showAndWait();
-					
-					if(result.get() != ButtonType.OK) {
+					if(createConfirmation("This search term is already on the list.",
+										  "Do you wish to add the search term anyway?")) {
+						termList.getItems().add(termField.getText());
+						termList.scrollTo(termList.getItems().size() - 1);
 						termField.setText("");
 						return;
 					}
-					
 					else {
-						termList.getItems().add(termField.getText());
-						termList.scrollTo(termList.getItems().size() - 1);
 						termField.setText("");
 						return;
 					}
@@ -270,55 +256,66 @@ public class SearchView implements Observer{
 			termList.scrollTo(termList.getItems().size() - 1);
 			termField.setText("");
 		}
-		
-		return;
 	}
 	
 	private void search() {
-		if(depthField.getText() != null && !depthField.getText().trim().isEmpty()) {
+		int urlListSize = urlList.getItems().size();
+		int termListSize = termList.getItems().size();
+		
+		if(urlListSize != 0 && termListSize != 0) {}
+		
+		if(urlListSize == 0){
+			createAlert("No search urls provided.",
+						"There are no urls in the url list.");
+			urlField.requestFocus();
+		}
+	
+		else if(termListSize == 0){
+			createAlert("No search terms provided.",
+						"There are no terms in the term list.");
+			termField.requestFocus();
+		}
+		
+		else if(depthField.getText() == null || depthField.getText().trim().isEmpty()) {
+			createAlert("No search depth provided.",
+					"There is no depth in the depth "
+					+ "field (a depth that is only"
+					+ "\nwhite space is ignored).");
+			depthField.requestFocus();
+		}
+		
+		else {
 			try {
 				depth = Integer.parseInt(depthField.getText());
 			} catch (NumberFormatException e) {
 				createAlert("Illegal Depth Argument: " + depthField.getText(), 
-											"Depth must be an integer 1, 7, 92, etc.");
+										"Depth must be an integer 1, 7, 92, etc.");
 				return;
 			}
-			int urlListSize = urlList.getItems().size();
-			int termListSize = termList.getItems().size();
 			
-			if(urlListSize != 0 && termListSize != 0) {
-				urlArrayList = new ArrayList<String>();
-				termArrayList = new ArrayList<String>();
+			urlArrayList = new ArrayList<String>();
+			termArrayList = new ArrayList<String>();
 		
-				for(String item: urlList.getItems()) {
-					urlArrayList.add(item);
-				}
-			
-				for(String item: termList.getItems()) {
-					termArrayList.add(item);
-				}
-		
-				urlList.getItems().clear();
-				termList.getItems().clear();
-				depthField.setText("");
-				
-				right.setCenter(new ProgressIndicator(-1.0f));
-				right.getCenter().setScaleX(.5);
-				right.getCenter().setScaleY(.5);
-				
-				controller = new WebController(urlArrayList, termArrayList, depth);
-				controller.addObserver(this);
-				Thread t = new Thread(controller);
-				t.start();
-				
-				//try {System.out.println(controller.getWebPages().get(0).get().getURL());} catch(Exception ee){}
+			for(String item: urlList.getItems()) {
+				urlArrayList.add(item);
 			}
 			
-			else {
-				createAlert("Illegal Depth Argument: " + depthField.getText(), 
-										"Depth must be an integer 1, 7, 92, etc.");
+			for(String item: termList.getItems()) {
+				termArrayList.add(item);
 			}
+	
+			urlList.getItems().clear();
+			termList.getItems().clear();
+			depthField.setText("");
 				
+			right.setCenter(new ProgressIndicator(-1.0f));
+			right.getCenter().setScaleX(.5);
+			right.getCenter().setScaleY(.5);
+			
+			controller = new WebController(urlArrayList, termArrayList, depth);
+			controller.addObserver(this);
+			Thread t = new Thread(controller);
+			t.start();
 		}
 	}
 	
@@ -350,26 +347,21 @@ public class SearchView implements Observer{
 		primaryView.getTabPane().getSelectionModel().select(primaryView.getTabPane().getTabs().size() - 1);
 	}
 	
-	private void createAlert(String warning, String content) {
+	private void createAlert(String header, String content) {
 		Alert alert = new Alert(AlertType.WARNING);
-		alert.setHeaderText(warning);
+		alert.setHeaderText(header);
 		alert.setContentText(content);
-                alert.showAndWait();
+        alert.showAndWait();
 	}
 	
-	private String readUnfoundWebsites(List<String> unfoundWebsites) {
-		String unfoundWebsitesString = new String();
+	private boolean createConfirmation(String header, String content) {
+		Alert alert = new Alert(AlertType.CONFIRMATION);
+		alert.setHeaderText(header);
+		alert.setContentText(content);
 		
-		for(int i = 0; i < unfoundWebsites.size(); i++) {
-			if (i < unfoundWebsites.size() - 1) {
-				unfoundWebsitesString = unfoundWebsites.get(i) + ", ";
-			}
-			else {
-				unfoundWebsitesString = unfoundWebsites.get(i);
-			}
-		}
-		
-		return unfoundWebsitesString;
+		Optional<ButtonType> result = alert.showAndWait();
+		if(result.get() == ButtonType.OK) {return true;}
+		else {return false;}
 	}
 	
 	private ResultView readFile(int numTabs) {

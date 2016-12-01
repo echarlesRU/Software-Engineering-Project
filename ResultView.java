@@ -8,6 +8,7 @@ import java.net.URISyntaxException;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.cell.CheckBoxTreeCell;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
@@ -51,6 +52,7 @@ public class ResultView {
 		CheckBoxTreeItem<String> root = new CheckBoxTreeItem<>();
 		root.setExpanded(true);
 		resultTree.setShowRoot(false);
+		resultTree.setFocusTraversable(false);
 		//System.out.println(root.getValuse());
 
 		for(int i = 0; i < this.urls.size(); i++) {	
@@ -65,6 +67,7 @@ public class ResultView {
 			});
 			
 			CheckBoxTreeItem<String> box = new CheckBoxTreeItem<>(null, link);
+			box.getGraphic().setFocusTraversable(false);
 			//box.setGraphic(link);
 		
 			branches.add(makeBranch(box, root));
@@ -81,6 +84,10 @@ public class ResultView {
 		resultTree.setCellFactory(CheckBoxTreeCell.forTreeView());
 		resultTree.setRoot(root);
 		resultTree.setEditable(true);
+		
+		selectAll.setFocusTraversable(false);
+		deselectAll.setFocusTraversable(false);
+		save.setFocusTraversable(false);
 		
 		bottom.setPadding(new Insets(10));
 		bottom.setSpacing(10);
