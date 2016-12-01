@@ -326,14 +326,14 @@ public class SearchView implements Observer{
 		if((msg instanceof List)) {
 			if(msg == null) {System.out.println("null");return;}
 			else if(((List<String>)msg).size() == 0) {
-                                resetSearchView();
+                resetSearchView();
 				createResultView();
 			} 
 			else {
 				List<String> unfoundWebsites = (List<String>)msg;
 				resetSearchView();
 				createResultView();
-				createAlert("Some Websites Not Found", readUnfoundWebsites(unfoundWebsites));
+				createAlert("Some Websites Not Found", unfoundWebsites.toString());
 			}
 		}
 	}
@@ -350,9 +350,9 @@ public class SearchView implements Observer{
 		primaryView.getTabPane().getSelectionModel().select(primaryView.getTabPane().getTabs().size() - 1);
 	}
 	
-	private void createAlert(String title, String content) {
+	private void createAlert(String warning, String content) {
 		Alert alert = new Alert(AlertType.WARNING);
-		alert.setTitle(title);
+		alert.setHeaderText(warning);
 		alert.setContentText(content);
                 alert.showAndWait();
 	}
