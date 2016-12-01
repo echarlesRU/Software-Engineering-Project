@@ -165,7 +165,8 @@ public class WebController extends Observable implements Runnable{
                     }
             }
         }
-        this.write(this.scannedPages.size());
+        if(this.scannedPages != null && this.scannedPages.size() > 0)
+            this.write(this.scannedPages.size());
     }
     
     /**
