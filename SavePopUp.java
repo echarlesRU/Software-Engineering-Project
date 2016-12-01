@@ -7,7 +7,7 @@ import javafx.scene.layout.*;
 import javafx.scene.control.*;
 import javafx.geometry.*;
 
-public class SavePopup {
+public class SavePopUp {
 
 	Scene popupScene;
 	Stage stage;
@@ -22,7 +22,7 @@ public class SavePopup {
 	Button saveButton;
 	Button cancelButton;
 	
-	public SavePopup() {
+	public SavePopUp() {
 		savePopupLayout = new VBox();
 		
 		specifiedSaves = new TextArea();

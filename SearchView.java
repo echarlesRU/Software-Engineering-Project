@@ -187,7 +187,7 @@ public class SearchView implements Observer{
 	}
 	
 	private void handleHaltAction(MouseEvent e) {
-		//halt
+		controller.halt();
 	}
 	
 	private void handleEnterUrlButtonAction(KeyEvent e) {
@@ -323,10 +323,10 @@ public class SearchView implements Observer{
 	}
 	
 	public void update(Observable obs, Object msg) {
-		if(!(msg instanceof List)) {	
-			if(msg == null) {return;}
+		if((msg instanceof List)) {
+			if(msg == null) {System.out.println("null");return;}
 			else if(((List<String>)msg).size() == 0) {
-				resetSearchView();
+                                resetSearchView();
 				createResultView();
 			} 
 			else {
@@ -354,6 +354,7 @@ public class SearchView implements Observer{
 		Alert alert = new Alert(AlertType.WARNING);
 		alert.setTitle(title);
 		alert.setContentText(content);
+                alert.showAndWait();
 	}
 	
 	private String readUnfoundWebsites(List<String> unfoundWebsites) {
@@ -417,8 +418,8 @@ public class SearchView implements Observer{
 				}
 				else {resultString += "\n" + line;}
 			}
-			
-			output.get(counter).add(resultString.substring(4));
+			if(resultString != null && resultString.length() > 4)
+                            output.get(counter).add(resultString.substring(4));
 			
 			s.close();
 			

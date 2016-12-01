@@ -41,6 +41,8 @@ public class WebController extends Observable implements Runnable{
      * @param _depth User inputed search depth
      */
     public WebController(List<String> _initialURLs, List<String> _terms, int _depth){
+        this.fileName = "writeTest.txt";
+        try {new PrintWriter(this.fileName).close();} catch (IOException e) {}
         this.checkInitURLs(_initialURLs);
         
         this.initialURLs = _initialURLs;
@@ -52,19 +54,23 @@ public class WebController extends Observable implements Runnable{
         this.urlsScanned = new ArrayList();
         this.initTags();
         
-        this.fileName = null;
-        this.urlKey = "-~-";
-        this.outputKey = "\t-@-";
+        this.urlKey = "-~- ";
+        this.outputKey = "\t-@- ";
     }
     
     private void checkInitURLs(List<String> URLs){
         this.invalids = new ArrayList();
         
         for(String url: this.emptyIfNull(URLs)){
-            int responseCode = Jsoup.connect(url).response().statusCode();
+            try{
+                int responseCode = Jsoup.connect(url).response().statusCode();
 
-            if (!(responseCode >= 200 && responseCode < 300)){
-                    this.invalids.add(url);
+                //if ((responseCode < 200 || responseCode >= 400) && responseCode != 0){
+                if(responseCode != 0 && (responseCode < 200 || responseCode >= 400)){
+                        this.invalids.add(url + " (Code: " + responseCode + ") ");
+                }
+            }catch(Exception e){
+                this.invalids.add(url);
             }
         }
     }
@@ -94,9 +100,13 @@ public class WebController extends Observable implements Runnable{
     @Override
     public void run(){
         try{
+            if(this.invalids.equals(this.initialURLs)){
+               throw new IOException();
+            }
             this.scanPages();
             threads.shutdown();
-        } catch(IOException | InterruptedException | ExecutionException e){}
+        } catch(IOException | InterruptedException | ExecutionException
+                | RejectedExecutionException e){}
         Platform.runLater(() -> {
             super.setChanged();
             super.notifyObservers(this.invalids);
@@ -173,9 +183,10 @@ public class WebController extends Observable implements Runnable{
             //bool append param: True -> end of file , False -> beginning
             fWriter = new FileWriter(this.fileName, true);
         }
-        try (BufferedWriter bWriter = new BufferedWriter(fWriter);
+        try (   BufferedWriter bWriter = new BufferedWriter(fWriter);
                 PrintWriter pWriter = new PrintWriter(bWriter)) {
-            
+            if(stopWriteIndex > this.scannedPages.size() - 1)
+                stopWriteIndex = this.scannedPages.size() - 1;
             //Writing scanned page url and output
             for(int i = 0; i < stopWriteIndex; i++){
                 WebPage page = this.scannedPages.get(i).get();
@@ -186,10 +197,12 @@ public class WebController extends Observable implements Runnable{
                     }
                 }
             }
-            //Reduce list and close write streams
-            this.scannedPages.subList(0, stopWriteIndex).clear();
-            this.scannedPages.trimToSize();
+        } catch(IOException | InterruptedException | ExecutionException e){
+            // add sexy list management code to remove erroneous future
         }
+        //Reduce list and close write streams
+        this.scannedPages.subList(0, stopWriteIndex).clear();
+        this.scannedPages.trimToSize();
         fWriter.close();
     }
     
