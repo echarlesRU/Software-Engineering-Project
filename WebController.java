@@ -4,6 +4,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import javafx.application.Platform;
+import org.jsoup.Jsoup;
 
 /**
  * Takes the user input from the view, processes it, then allows a list of
@@ -16,6 +17,7 @@ public class WebController extends Observable implements Runnable{
     private final List<String> terms;          //List of user inputed terms
     private final int depth;                   //User inputed depth of search
     private int addedPages;                    //Number of pages scanning
+    private List<String> invalids;            //Invalid initial URLs
     
     private ArrayList<Future<WebPage>> scannedPages;//List of scanned WebPages
     private ArrayList<String> urlsScanned;          //List of scanned page URLs
@@ -39,6 +41,8 @@ public class WebController extends Observable implements Runnable{
      * @param _depth User inputed search depth
      */
     public WebController(List<String> _initialURLs, List<String> _terms, int _depth){
+        this.checkInitURLs(_initialURLs);
+        
         this.initialURLs = _initialURLs;
         this.terms = _terms;
         this.depth = _depth;
@@ -51,6 +55,18 @@ public class WebController extends Observable implements Runnable{
         this.fileName = null;
         this.urlKey = "-~-";
         this.outputKey = "\t-@-";
+    }
+    
+    private void checkInitURLs(List<String> URLs){
+        this.invalids = new ArrayList();
+        
+        for(String url: this.emptyIfNull(URLs)){
+            int responseCode = Jsoup.connect(url).response().statusCode();
+
+            if (!(responseCode >= 200 && responseCode < 300)){
+                    this.invalids.add(url);
+            }
+        }
     }
     
     /**
@@ -82,9 +98,9 @@ public class WebController extends Observable implements Runnable{
             threads.shutdown();
         } catch(IOException | InterruptedException | ExecutionException e){}
         Platform.runLater(() -> {
-                super.setChanged();
-                super.notifyObservers();
-            });
+            super.setChanged();
+            super.notifyObservers(this.invalids);
+        });
     }
     
     /**
@@ -205,20 +221,14 @@ public class WebController extends Observable implements Runnable{
     private <T>Iterable<T> emptyIfNull(Iterable<T> iterable) {
         return iterable == null ? Collections.emptyList() : iterable;
     }
-    
+
     /**
-     * Returns if the thread pool is completed running
-     * @return boolean
+     * Shuts down the threads and writes any results left to disk
      */
-    public boolean isFinished(){
-        return this.threads.isShutdown();
-    }
-    
-    /**
-     * Gets the scanned WebPage objects
-     * @return WebPage List scanned pages
-     */
-    public List<Future<WebPage>> getWebPages(){
-        return this.scannedPages;
+    public void halt(){
+        try {
+            this.threads.shutdown();
+            this.write(this.scannedPages.size());
+        } catch (InterruptedException | ExecutionException | IOException e) {}
     }
 }
