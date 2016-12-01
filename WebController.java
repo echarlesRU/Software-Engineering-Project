@@ -55,8 +55,8 @@ public class WebController extends Observable implements Runnable{
         this.urlsScanned = new ArrayList();
         this.initTags();
         
-        this.urlKey = "-~- ";
-        this.outputKey = "\t-@- ";
+        this.urlKey = "-~-";
+        this.outputKey = "\t-@-";
     }
     
     private void checkInitURLs(){
