@@ -43,9 +43,10 @@ public class WebController extends Observable implements Runnable{
     public WebController(List<String> _initialURLs, List<String> _terms, int _depth){
         this.fileName = "writeTest.txt";
         try {new PrintWriter(this.fileName).close();} catch (IOException e) {}
-        this.checkInitURLs(_initialURLs);
-        
+
         this.initialURLs = _initialURLs;
+        this.checkInitURLs();
+        
         this.terms = _terms;
         this.depth = _depth;
         
@@ -58,20 +59,22 @@ public class WebController extends Observable implements Runnable{
         this.outputKey = "\t-@- ";
     }
     
-    private void checkInitURLs(List<String> URLs){
+    private void checkInitURLs(){
         this.invalids = new ArrayList();
         
-        for(String url: this.emptyIfNull(URLs)){
+        for(String url: this.emptyIfNull(this.initialURLs)){
             try{
                 int responseCode = Jsoup.connect(url).response().statusCode();
 
-                //if ((responseCode < 200 || responseCode >= 400) && responseCode != 0){
                 if(responseCode != 0 && (responseCode < 200 || responseCode >= 400)){
                         this.invalids.add(url + " (Code: " + responseCode + ") ");
                 }
             }catch(Exception e){
                 this.invalids.add(url);
             }
+        }
+        for(String url: this.emptyIfNull(this.invalids)){
+            this.initialURLs.remove(url);
         }
     }
     
