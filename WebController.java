@@ -55,8 +55,8 @@ public class WebController extends Observable implements Runnable{
         this.urlsScanned = new ArrayList();
         this.initTags();
         
-        this.urlKey = "-~- ";
-        this.outputKey = "\t-@- ";
+        this.urlKey = "-~-";
+        this.outputKey = "\t-@-";
     }
     
     private void checkInitURLs(){
@@ -103,9 +103,6 @@ public class WebController extends Observable implements Runnable{
     @Override
     public void run(){
         try{
-            if(this.invalids.equals(this.initialURLs)){
-               throw new IOException();
-            }
             this.scanPages();
             threads.shutdown();
         } catch(IOException | InterruptedException | ExecutionException
@@ -165,7 +162,7 @@ public class WebController extends Observable implements Runnable{
                     }
             }
         }
-        if(this.scannedPages != null && this.scannedPages.size() > 0)
+            if(this.scannedPages != null && this.scannedPages.size() > 0)
             this.write(this.scannedPages.size());
     }
     
