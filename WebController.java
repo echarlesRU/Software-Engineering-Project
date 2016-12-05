@@ -179,6 +179,9 @@ public class WebController extends Observable implements Runnable{
             throws IOException, InterruptedException, ExecutionException{
         //Writer Initialization
         FileWriter fWriter;
+        int curIndex = 0;
+        long MAX_WAIT = 20;
+        
         if(this.fileName == null){
             this.fileName = "writeTest.txt";
             fWriter = new FileWriter(this.fileName);
@@ -192,8 +195,8 @@ public class WebController extends Observable implements Runnable{
             if(stopWriteIndex > this.scannedPages.size())
                 stopWriteIndex = this.scannedPages.size();
             //Writing scanned page url and output
-            for(int i = 0; i < stopWriteIndex; i++){
-                WebPage page = this.scannedPages.get(i).get();
+            for(; curIndex < stopWriteIndex; curIndex++){
+                WebPage page = this.scannedPages.get(curIndex).get();
                 if(!(page.getOutput() == null || page.getOutput().isEmpty())){
                     pWriter.println(this.urlKey + page.getURL());
                     for(String output: page.getOutput()){
@@ -201,12 +204,14 @@ public class WebController extends Observable implements Runnable{
                     }
                 }
             }
+            this.scannedPages.subList(0, stopWriteIndex).clear();
+            this.scannedPages.trimToSize();
         } catch(IOException | InterruptedException | ExecutionException e){
-            // add sexy list management code to remove erroneous future
+            this.scannedPages.subList(0, curIndex).clear();
+            this.scannedPages.trimToSize();
+            this.write(stopWriteIndex - curIndex);
         }
         //Reduce list and close write streams
-        this.scannedPages.subList(0, stopWriteIndex).clear();
-        this.scannedPages.trimToSize();
         fWriter.close();
     }
     
