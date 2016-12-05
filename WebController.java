@@ -7,11 +7,10 @@ import javafx.application.Platform;
 import org.jsoup.Jsoup;
 
 /**
- * Takes the user input from the view, processes it, then allows a list of
- *     WebPage objects containing all output results to be retrieved.
+ * Takes the user input from the view, processes it and periodically writes the
+ *     results to disc.
  * @author John Filipowicz
  */
-//public class WebController extends Thread{
 public class WebController extends Observable implements Runnable{
     private final List<String> initialURLs;    //List of user inputed URLs
     private final List<String> terms;          //List of user inputed terms
@@ -59,6 +58,10 @@ public class WebController extends Observable implements Runnable{
         this.outputKey = "\t-@-";
     }
     
+    /**
+     * Checks if the initial URLs produce a valid response code and removes them
+     *     if they do not, adding them to an error list.
+     */
     private void checkInitURLs(){
         this.invalids = new ArrayList();
         
