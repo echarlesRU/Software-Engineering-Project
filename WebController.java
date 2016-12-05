@@ -163,7 +163,7 @@ public class WebController extends Observable implements Runnable{
             }
         }
             if(this.scannedPages != null && this.scannedPages.size() > 0)
-            this.write(this.scannedPages.size());
+                this.write(this.scannedPages.size());
     }
     
     /**
@@ -186,8 +186,8 @@ public class WebController extends Observable implements Runnable{
         }
         try (   BufferedWriter bWriter = new BufferedWriter(fWriter);
                 PrintWriter pWriter = new PrintWriter(bWriter)) {
-            if(stopWriteIndex > this.scannedPages.size() - 1)
-                stopWriteIndex = this.scannedPages.size() - 1;
+            if(stopWriteIndex > this.scannedPages.size())
+                stopWriteIndex = this.scannedPages.size();
             //Writing scanned page url and output
             for(int i = 0; i < stopWriteIndex; i++){
                 WebPage page = this.scannedPages.get(i).get();
