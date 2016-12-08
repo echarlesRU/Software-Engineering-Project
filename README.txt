@@ -36,3 +36,5 @@ up. Past search results will be available to be opened within the application
 for later reference as well.
 
 
+
+dist.zip contains the primary jar file "WebChase.jar" and all needed libraries to run. See user manual for more information.
