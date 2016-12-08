@@ -11,65 +11,68 @@ import javafx.stage.*;
 
 import java.util.*;
 
+/**
+ * This class is passed a Stage, and sets up the primary view. The class creates a Stage, 
+ * 		for the application.
+ * @author Mitchell Powell
+ */
 public class PrimaryView extends Application {
-	Scene primaryScene;
-	BorderPane mainLayout;
+	private Scene primaryScene;				//Container for all JavaFX Nodes in GUI
+	private BorderPane mainLayout;			//Main layout Node
 	
-	//MenuBar menuBar;
-	//Menu open, save, help;
+	private TabPane tabPane;				//Node containing all Tab Nodes
 	
-	TabPane tabPane;
+	private SearchView searchView;			//A Tab containing Nodes used to search
 	
-	SearchView searchView;
-	
-	List<ResultView> resultViews;
-	
-	//Tab testTab;
-	
+	/**
+	 * Initialize fields, and call several setup methods. 
+	 * @param primaryStage Stage which holds the primaryScene
+	 */
 	@Override
 	public void start(Stage primaryStage) throws Exception{
-		//Sets Title of Window
-		primaryStage.setTitle("Expert Web Crawler");
-		
 		mainLayout = new BorderPane();
-		
-		//menuBar = new MenuBar();
-		
-		//open = new Menu("Open");
-		//save = new Menu("Save");
-		//help = new Menu("Help");
-		
+		primaryScene = new Scene(this.mainLayout, 700, 600);
 		tabPane = new TabPane();
-		
 		searchView = new SearchView(this);
 		
-		resultViews = new ArrayList<ResultView>();
-		
-		//testTab = new Tab("Test Tab");
-		
-		//menuBar.getMenus().addAll(open, save, help);
-		
-		tabPane.getTabs().add(searchView.getSearchView());
-		tabPane.setTabClosingPolicy(TabClosingPolicy.ALL_TABS);
-		
-		//mainLayout.setTop(menuBar);
-		mainLayout.setCenter(tabPane);
-		
-		primaryScene = new Scene(mainLayout, 700, 600);
-		
-		primaryStage.setScene(primaryScene);
-		primaryStage.centerOnScreen();
-		primaryStage.show();
-		
-		/*REWORK EVERYTHING FROM HERE DOWN INTO METHODS AND ACTIONS*/
-		
-		//SavePopup sp = new SavePopup(); //needs to be in an actionlistener.
-		
-		//Tab results = new Tab("ResultsX");
-		
-		//tabPane.getTabs().add(results);
+		setupTabPane();
+		setupMainLayout();
+		setupStage(primaryStage);
 	}
 	
+	/**
+	 * Adds this searchView to this tabPane, and makes all Tabs closable.
+	 * 		Note: The TabPane TabClosingPolicy does NOT override an individual
+	 * 		Tab's TabClosingPolicy.
+	 */
+	private void setupTabPane() {
+		tabPane.getTabs().add(this.searchView.getSearchTab());
+		tabPane.setTabClosingPolicy(TabClosingPolicy.ALL_TABS);
+	}
+	
+	/**
+	 * Places this tabPane in the center of this mainLayout.
+	 */
+	private void setupMainLayout() {
+		mainLayout.setCenter(this.tabPane);
+	}
+	
+	/**
+	 * Sets up the primary Stage.
+	 * @param primaryStage the Stage to be set up.
+	 */
+	private void setupStage(Stage primaryStage) {
+		primaryStage.setTitle("Expert Web Crawler");	//Set Title of window
+		primaryStage.setScene(this.primaryScene);		//Add Scene to window
+		primaryStage.centerOnScreen();					//Center window on screen
+		primaryStage.show();							//Show window
+
+	}
+	
+	/**
+	 * Returns this tabPane
+	 * @return this tabPane
+	 */
 	public TabPane getTabPane() {
 		return this.tabPane;
 	}
