@@ -1,11 +1,11 @@
-package webchase;
+    package webchase;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import javafx.application.Platform;
 import org.jsoup.Jsoup;
-
+ 
 /**
  * Takes the user input from the view, processes it and periodically writes the
  *     results to disc.
@@ -73,6 +73,7 @@ public class WebController extends Observable implements Runnable{
                         this.invalids.add(url + " (Code: " + responseCode + ") ");
                 }
             }catch(Exception e){
+                System.out.println("( " + url + " ) :is invalid");
                 this.invalids.add(url);
             }
         }
@@ -109,7 +110,7 @@ public class WebController extends Observable implements Runnable{
             this.scanPages();
             threads.shutdown();
         } catch(IOException | InterruptedException | ExecutionException
-                | RejectedExecutionException e){}
+                | RejectedExecutionException e){System.out.println(e.getMessage());}
         Platform.runLater(() -> {
             super.setChanged();
             super.notifyObservers(this.invalids);

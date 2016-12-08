@@ -41,7 +41,7 @@ public class WebPage implements Callable{
         Document pageHTML;
         try {
             Cleaner sanitize = new Cleaner(Whitelist.relaxed());
-            pageHTML = Jsoup.connect(this.thisURL).get();
+            pageHTML = Jsoup.connect(this.thisURL).timeout(8000).get();
             pageHTML = sanitize.clean(pageHTML);
             
             if(depth > 1)
