@@ -1,3 +1,12 @@
+/**
+* License: CC Attribution Non-Commercial 4.0 International
+*    See short hand summary here:
+*        http://creativecommons.org/licenses/by-nc/4.0/
+*    See legal specifications here:
+*        http://creativecommons.org/licenses/by-nc/4.0/legalcode
+*
+*    Reuse of code allowed under the conditions in the link above.
+*/
 package webchase;
 
 import java.util.List;

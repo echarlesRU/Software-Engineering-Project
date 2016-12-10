@@ -1,4 +1,13 @@
-    package webchase;
+/**
+* License: CC Attribution Non-Commercial 4.0 International
+*    See short hand summary here:
+*        http://creativecommons.org/licenses/by-nc/4.0/
+*    See legal specifications here:
+*        http://creativecommons.org/licenses/by-nc/4.0/legalcode
+*
+*    Reuse of code allowed under the conditions in the link above.
+*/
+package webchase;
 
 import java.io.*;
 import java.util.*;
@@ -29,9 +38,9 @@ public class WebController extends Observable implements Runnable{
     
     //Defines minumum url length: http://ab.cde
     private final int MIN_URL_LENGTH = 13;
-    private final int MAX_BEFORE_WRITE = 75;  //Maximum URLs processed at once
+    private final int MAX_BEFORE_WRITE = 50;  //Maximum URLs processed at once
     //Maximum URLS held for duplicate comparisions
-    private final int MAX_URL_STORED = 750;
+    private final int MAX_URL_STORED = 250;
     
     /**
      * Initialize all fields
@@ -181,7 +190,6 @@ public class WebController extends Observable implements Runnable{
         //Writer Initialization
         FileWriter fWriter;
         int curIndex = 0;
-        long MAX_WAIT = 20;
         
         if(this.fileName == null){
             this.fileName = "writeTest.txt";
@@ -214,6 +222,8 @@ public class WebController extends Observable implements Runnable{
         }
         //Reduce list and close write streams
         fWriter.close();
+        TimeUnit.SECONDS.sleep(5);
+        System.gc();
     }
     
     /**
